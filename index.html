@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Website Script Executor</title>
+  <!-- Add your custom CSS styles here if needed -->
+</head>
+<body>
+  <h1>Website Script Executor</h1>
+  <button id="executeButton">Execute Script</button>
+
+  <script>
+    document.getElementById('executeButton').addEventListener('click', function() {
+      // Injecting the provided JavaScript code into the website
+      const code = 'prompt("Copy this:", localStorage.getItem("infinite-craft-data"));';
+      const script = document.createElement('script');
+      script.textContent = code;
+      (document.head || document.documentElement).appendChild(script);
+      script.remove(); // Clean up after execution
+    });
+  </script>
+</body>
+</html>
