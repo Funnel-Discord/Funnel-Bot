@@ -8,6 +8,6 @@
   "dependencies": {
     },
   "scripts": {
-    "start": "start"
+    "start": "index"
   }
 }
