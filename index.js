@@ -1,21 +1,15 @@
 const http = require('http');
 const url = require('url');
 
-// Object to store ban data { username: { time: timestamp, duration: durationInMinutes } }
-let bannedPlayers = {};
+// Array to store ban data { username: username, time: timestamp, duration: durationInMinutes }
+let bannedPlayers = [];
 
 // Function to update ban status
 function updateBanStatus() {
   setInterval(() => {
-    Object.keys(bannedPlayers).forEach((username) => {
-      const banInfo = bannedPlayers[username];
-      const currentTime = Date.now();
-      const elapsedTime = currentTime - banInfo.time;
-      const remainingTime = banInfo.duration * 60000 - elapsedTime; // Convert duration to milliseconds
-      if (remainingTime <= 0) {
-        // Remove player from banned list if ban duration is over
-        delete bannedPlayers[username];
-      }
+    bannedPlayers = bannedPlayers.filter((player) => {
+      const elapsedTime = Date.now() - player.time;
+      return elapsedTime < player.duration * 60000; // Convert duration to milliseconds
     });
   }, 60000); // Check ban status every minute
 }
@@ -37,7 +31,7 @@ const server = http.createServer((req, res) => {
     req.on('end', () => {
       try {
         const { username, duration } = JSON.parse(body);
-        bannedPlayers[username] = { time: Date.now(), duration };
+        bannedPlayers.push({ username, time: Date.now(), duration });
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ message: 'Player banned successfully' }));
       } catch (error) {
@@ -68,3 +62,4 @@ server.listen(PORT, () => {
 
 // Start ban status update process
 updateBanStatus();
+
