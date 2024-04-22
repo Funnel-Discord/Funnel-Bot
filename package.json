@@ -6,8 +6,5 @@
   "author": "funneljai2@gmail.com",
   "license": "none",
   "dependencies": {
-    },
-  "commands": {
-    "start"
-  }
+    }
 }
