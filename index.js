@@ -42,6 +42,7 @@ wss.on('connection', (ws) => {
 server.on('request', (req, res) => {
   const { pathname, query } = url.parse(req.url, true);
 
+  res.setHeader('Access-Control-Allow-Origin', '*');
   // Handle POST request to ban a player
   if (req.method === 'POST' && pathname === '/api/ban') {
     let body = '';
