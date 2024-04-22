@@ -1,0 +1,11 @@
+# Exported from Render on 2024-04-22T17:58:26Z
+services:
+- type: web
+  name: Funnel-banlist
+  runtime: node
+  repo: https://github.com/Funnel-Discord/Funnel-Bot
+  plan: free
+  region: virginia
+  buildCommand: yarn
+  startCommand: yarn start
+version: "1"
