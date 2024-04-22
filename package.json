@@ -8,6 +8,6 @@
   "dependencies": {
     },
   "scripts": {
-    "start": "index"
+    "start": "node ./index.js"
   }
 }
