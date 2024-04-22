@@ -1,0 +1,10 @@
+{
+  "name": "funneljai-banlist",
+  "version": "1.0.0",
+  "description": "testing banlist",
+  "main": "index.js",
+  "author": "funneljai2@gmail.com",
+  "license": "none",
+  "dependencies": {
+    }
+}
