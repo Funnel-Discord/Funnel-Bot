@@ -1,5 +1,7 @@
-const http = require('http');
+const https = require('https');
+const fs = require('fs');
 const url = require('url');
+const WebSocket = require('ws');
 
 // Array to store ban data { username: username, time: timestamp, duration: durationInMinutes }
 let bannedPlayers = [];
@@ -11,11 +13,33 @@ function updateBanStatus() {
       const elapsedTime = Date.now() - player.time;
       return elapsedTime < player.duration * 60000; // Convert duration to milliseconds
     });
-  }, 60000); // Check ban status every minute
+    // Notify connected clients about ban status updates
+    broadcastBanStatus();
+  }, 1000); // Check ban status every second
 }
 
+// Create HTTPS server options (replace with your SSL certificate and key)
+const options = {
+  key: fs.readFileSync('certs/private.key'),
+  cert: fs.readFileSync('certs/certificate.crt')
+};
+
+// Create HTTPS server
+const server = https.createServer(options);
+
+// Initialize WebSocket server
+const wss = new WebSocket.Server({ server });
+
+// WebSocket connection handler
+wss.on('connection', (ws) => {
+  console.log('WebSocket client connected');
+
+  // Send initial ban status to the connected client
+  ws.send(JSON.stringify(bannedPlayers));
+});
+
 // Create a server
-const server = http.createServer((req, res) => {
+server.on('request', (req, res) => {
   const { pathname, query } = url.parse(req.url, true);
 
   // Handle POST request to ban a player
@@ -34,6 +58,8 @@ const server = http.createServer((req, res) => {
         bannedPlayers.push({ username, time: Date.now(), duration });
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ message: 'Player banned successfully' }));
+        // Notify connected clients about ban status updates
+        broadcastBanStatus();
       } catch (error) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Invalid data format' }));
@@ -55,11 +81,21 @@ const server = http.createServer((req, res) => {
 });
 
 // Start the server
-const PORT = 19132;
+const PORT = 19132; // HTTPS default port
 server.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });
 
 // Start ban status update process
 updateBanStatus();
+
+// Function to broadcast ban status to all connected clients
+function broadcastBanStatus() {
+  const banStatus = JSON.stringify(bannedPlayers);
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(banStatus);
+    }
+  });
+}
 
