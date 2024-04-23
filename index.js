@@ -1,9 +1,33 @@
 const http = require('http');
+const fs = require('fs');
 const url = require('url');
 const WebSocket = require('ws');
 
+const BAN_LIST_FILE = 'bannedlist.json';
+
+// Function to read banned players from file
+function readBannedPlayersFromFile() {
+  try {
+    const data = fs.readFileSync(BAN_LIST_FILE, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    console.error('Error reading banned players:', error);
+    return [];
+  }
+}
+
+// Function to write banned players to file
+function writeBannedPlayersToFile(bannedPlayers) {
+  try {
+    fs.writeFileSync(BAN_LIST_FILE, JSON.stringify(bannedPlayers, null, 2));
+    console.log('Banned players list updated successfully.');
+  } catch (error) {
+    console.error('Error writing banned players:', error);
+  }
+}
+
 // Array to store ban data { username: username, time: timestamp, duration: durationInMinutes }
-let bannedPlayers = [];
+let bannedPlayers = readBannedPlayersFromFile();
 
 // Function to update ban status
 function updateBanStatus() {
@@ -12,6 +36,8 @@ function updateBanStatus() {
       const elapsedTime = Date.now() - player.time;
       return elapsedTime < player.duration * 60000; // Convert duration to milliseconds
     });
+    // Save the updated ban list to file
+    writeBannedPlayersToFile(bannedPlayers);
   }, 60000); // Check ban status every minute
 }
 
@@ -48,16 +74,20 @@ server.on('request', (req, res) => {
       try {
         const { username, duration } = JSON.parse(body);
         const banTime = new Date(); // Get current time
-        bannedPlayers.push({ username, time: banTime.toLocaleString('en-US', { timeZone: 'EDT' }), duration });
+        const newBan = { username, time: banTime.toLocaleString('en-US', { timeZone: 'UTC' }), duration };
+        bannedPlayers.push(newBan);
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: 'Player banned successfully' }));
-
-        // Broadcast updated banned players data to all WebSocket clients
+        res.end(JSON.stringify({ message: 'Player banned successfully', newBan }));
+        
+        // Broadcast the new banned player data to all WebSocket clients
         wss.clients.forEach((client) => {
           if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify(bannedPlayers));
+            client.send(JSON.stringify(newBan));
           }
         });
+        
+        // Save the updated ban list to file
+        writeBannedPlayersToFile(bannedPlayers);
       } catch (error) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Invalid data format' }));
@@ -79,7 +109,7 @@ server.on('request', (req, res) => {
 });
 
 // Start the server
-const PORT = 19132; // Default HTTP port
+const PORT = 3000; // Default HTTP port
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
