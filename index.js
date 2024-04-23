@@ -18,8 +18,6 @@ function updateBanStatus() {
 
 // Create HTTPS server options (replace with your SSL certificate and key)
 const options = {
-  key: fs.readFileSync('certs/private.key'),
-  cert: fs.readFileSync('certs/certificate.crt')
 };
 
 // Create HTTPS server
