@@ -109,7 +109,7 @@ server.on('request', (req, res) => {
 });
 
 // Start the server
-const PORT = 3000; // Default HTTP port
+const PORT = 19132; // Default HTTP port
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
