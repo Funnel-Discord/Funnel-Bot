@@ -48,7 +48,7 @@ server.on('request', (req, res) => {
       try {
         const { username, duration } = JSON.parse(body);
         const banTime = new Date(); // Get current time
-        bannedPlayers.push({ username, time: banTime.toLocaleString('en-US', { timeZone: 'UTC' }), duration });
+        bannedPlayers.push({ username, time: banTime.toLocaleString('en-US', { timeZone: 'EDT' }), duration });
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ message: 'Player banned successfully' }));
 
