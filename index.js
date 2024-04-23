@@ -1,4 +1,5 @@
-const http = require('http');
+const https = require('https');
+const fs = require('fs');
 const url = require('url');
 const WebSocket = require('ws');
 
@@ -15,8 +16,14 @@ function updateBanStatus() {
   }, 60000); // Check ban status every minute
 }
 
-// Create HTTP server
-const server = http.createServer();
+// Create HTTPS server options (replace with your SSL certificate and key)
+const options = {
+  key: fs.readFileSync('certs/private.key'),
+  cert: fs.readFileSync('certs/certificate.crt')
+};
+
+// Create HTTPS server
+const server = https.createServer(options);
 
 // Create WebSocket server
 const wss = new WebSocket.Server({ server });
@@ -79,10 +86,11 @@ server.on('request', (req, res) => {
 });
 
 // Start the server
-const PORT = 19132; // Default HTTP port
+const PORT = 19132; // HTTPS default port
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
 
 // Start ban status update process
 updateBanStatus();
+
