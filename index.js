@@ -13,9 +13,7 @@ function updateBanStatus() {
       const elapsedTime = Date.now() - player.time;
       return elapsedTime < player.duration * 60000; // Convert duration to milliseconds
     });
-    // Notify connected clients about ban status updates
-    broadcastBanStatus();
-  }, 1000); // Check ban status every second
+  }, 60000); // Check ban status every minute
 }
 
 // Create HTTPS server options (replace with your SSL certificate and key)
@@ -27,22 +25,22 @@ const options = {
 // Create HTTPS server
 const server = https.createServer(options);
 
-// Initialize WebSocket server
+// Create WebSocket server
 const wss = new WebSocket.Server({ server });
 
 // WebSocket connection handler
 wss.on('connection', (ws) => {
-  console.log('WebSocket client connected');
-
-  // Send initial ban status to the connected client
+  // Send initial banned players data to the client
   ws.send(JSON.stringify(bannedPlayers));
 });
 
-// Create a server
+// HTTP request handler
 server.on('request', (req, res) => {
   const { pathname, query } = url.parse(req.url, true);
 
+  // Enable CORS for all origins
   res.setHeader('Access-Control-Allow-Origin', '*');
+
   // Handle POST request to ban a player
   if (req.method === 'POST' && pathname === '/api/ban') {
     let body = '';
@@ -56,11 +54,17 @@ server.on('request', (req, res) => {
     req.on('end', () => {
       try {
         const { username, duration } = JSON.parse(body);
-        bannedPlayers.push({ username, time: Date.now(), duration });
+        const banTime = new Date(); // Get current time
+        bannedPlayers.push({ username, time: banTime.toLocaleString('en-US', { timeZone: 'UTC' }), duration });
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ message: 'Player banned successfully' }));
-        // Notify connected clients about ban status updates
-        broadcastBanStatus();
+
+        // Broadcast updated banned players data to all WebSocket clients
+        wss.clients.forEach((client) => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify(bannedPlayers));
+          }
+        });
       } catch (error) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: 'Invalid data format' }));
@@ -89,14 +93,3 @@ server.listen(PORT, () => {
 
 // Start ban status update process
 updateBanStatus();
-
-// Function to broadcast ban status to all connected clients
-function broadcastBanStatus() {
-  const banStatus = JSON.stringify(bannedPlayers);
-  wss.clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(banStatus);
-    }
-  });
-}
-
