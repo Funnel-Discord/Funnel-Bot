@@ -3,12 +3,12 @@ const fs = require('fs');
 const url = require('url');
 const WebSocket = require('ws');
 
-const BAN_LIST_FILE = 'bannedlist.json';
+const BAN_LIST_FILE = './bannedlist.json';
 
 // Function to read banned players from file
 function readBannedPlayersFromFile() {
   try {
-    const data = fs.readFileSync(BAN_LIST_FILE, 'utf8');
+    const data = fs.readFileSync(BAN_LIST_FILE);
     return JSON.parse(data);
   } catch (error) {
     console.error('Error reading banned players:', error);
