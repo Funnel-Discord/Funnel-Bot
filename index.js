@@ -34,7 +34,7 @@ function writeBannedPlayersToFile(bannedPlayers) {
 let bannedPlayers = readBannedPlayersFromFile();
 
 // Function to update ban status
-export function updateBanStatus() {
+function updateBanStatus() {
   setInterval(() => {
     bannedPlayers = bannedPlayers.filter((player) => {
       const elapsedTime = Date.now() - player.time;
