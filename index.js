@@ -1,9 +1,13 @@
+const express = require('express');
 const http = require('http');
 const fs = require('fs');
 const url = require('url');
 const WebSocket = require('ws');
 
 const BAN_LIST_FILE = './bannedlist.json';
+const app = express();
+const server = http.createServer(app);
+const wss = new WebSocket.Server({ server });
 
 // Function to read banned players from file
 function readBannedPlayersFromFile() {
@@ -41,71 +45,51 @@ function updateBanStatus() {
   }, 60000); // Check ban status every minute
 }
 
-// Create HTTP server
-const server = http.createServer();
-
-// Create WebSocket server
-const wss = new WebSocket.Server({ server });
-
 // WebSocket connection handler
 wss.on('connection', (ws) => {
   // Send initial banned players data to the client
   ws.send(JSON.stringify(bannedPlayers));
 });
 
-// HTTP request handler
-server.on('request', (req, res) => {
-  const { pathname, query } = url.parse(req.url, true);
+// Middleware to parse JSON request bodies
+app.use(express.json());
 
-  // Enable CORS for all origins
+// Enable CORS for all origins
+app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
+  next();
+});
 
-  // Handle POST request to ban a player
-  if (req.method === 'POST' && pathname === '/api/ban') {
-    let body = '';
-    
-    // Read data from the request
-    req.on('data', (chunk) => {
-      body += chunk.toString();
-    });
+// POST request to ban a player
+app.post('/api/ban', (req, res) => {
+  const { username, duration } = req.body;
+  const banTime = new Date(); // Get current time
+  const newBan = { username, time: banTime.toLocaleString('en-US', { timeZone: 'EDT' }), duration };
+  bannedPlayers.push(newBan);
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ message: 'Player banned successfully', newBan }));
 
-    // Parse and store ban data
-    req.on('end', () => {
-      try {
-        const { username, duration } = JSON.parse(body);
-        const banTime = new Date(); // Get current time
-        const newBan = { username, time: banTime.toLocaleString('en-US', { timeZone: 'EDT' }), duration };
-        bannedPlayers.push(newBan);
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ message: 'Player banned successfully', newBan }));
-        
-        // Broadcast the new banned player data to all WebSocket clients
-        wss.clients.forEach((client) => {
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify(newBan));
-          }
-        });
-        
-        // Save the updated ban list to file
-        writeBannedPlayersToFile(bannedPlayers);
-      } catch (error) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Invalid data format' }));
-      }
-    });
-  }
+  // Broadcast the new banned player data to all WebSocket clients
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify(newBan));
+    }
+  });
 
-  // Handle GET request to retrieve ban status
-  else if (req.method === 'GET' && pathname === '/api/ban') {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(bannedPlayers));
-  }
+  // Save the updated ban list to file
+  writeBannedPlayersToFile(bannedPlayers);
+});
 
-  // Handle other requests
-  else {
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Not found' }));
-  }
+// GET request to retrieve ban status
+app.get('/api/ban', (req, res) => {
+  res.writeHead(200, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(bannedPlayers));
+});
+
+// Handle other requests
+app.all('*', (req, res) => {
+  res.writeHead(404, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ error: 'Not found' }));
 });
 
 // Start the server
