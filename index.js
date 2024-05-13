@@ -34,7 +34,7 @@ function writeBannedPlayersToFile(bannedPlayers) {
 let bannedPlayers = readBannedPlayersFromFile();
 
 // Function to update ban status
-function updateBanStatus() {
+export function updateBanStatus() {
   setInterval(() => {
     bannedPlayers = bannedPlayers.filter((player) => {
       const elapsedTime = Date.now() - player.time;
@@ -97,6 +97,3 @@ const PORT = 19132; // Default HTTP port
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
-
-// Start ban status update process
-updateBanStatus();
